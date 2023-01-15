@@ -61,10 +61,12 @@ def download_gee_rasters(ic_name, shp_name, shp_dir, google_drive_path,
     
     if not os.path.exists(ic_table_path):
         ic_table = create_ic_table(ic, ic_table_path, doy_increment)
+    else:
+        ic_table = pd.read_csv(ic_table_path)
     
     idx_download = ((ic_table['date'] >= start_date) & 
                     (ic_table['date'] <= end_date) & 
-                    (ic_table['sample'] <= end_date))
+                    (ic_table['sample']))
     ic_names_to_download = ic_table.names[idx_download].values
     
     # %%
@@ -128,9 +130,9 @@ def create_ic_table(ic, ic_table_path, doy_increment):
     ic_table['gee_task_sent'] = ""
     
     # sae the image table
+    print("Saving ic_table...")
     ic_table.to_csv(ic_table_path, index = False)
 
-    
     return ic_table
 
 
