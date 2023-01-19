@@ -49,7 +49,7 @@ shapefile_directory = "./UbonRatchathani" # local path to shapefile directory
 google_drive_path = '/Users/gopal/Google Drive/_Research/Research projects/ML/download_gee_rasters'
 start_date = '2016-01-01' # start date for imagery download
 end_date = '2017-01-01' # end date for imagery download
-ic_name = 's1' # currently can only be 's1' (can be "s2" in future)
+ic_name = 's2' # currently can only be 's1' (can be "s2" in future)
 doy_increment = 6 # days which to sample image collection (days)
 
 download_gee_rasters(ic_name, shapefile_name, shapefile_directory, google_drive_path, 

@@ -13,6 +13,8 @@ import geopandas as gpd
 import geemap
 import ee
 import re
+import eesentinel as ees
+
 # import plotnine as p9
 # import sys
 # from datetime import timedelta
@@ -48,15 +50,19 @@ def download_gee_rasters(ic_name, shp_name, shp_dir, google_drive_path,
     # Map.addLayer(boundary_ee,{},'boundary_ee')
     # Map.centerObject(boundary_ee, 13)
     
+    ## SELECT THE IMAGE COLLECTION
     if ic_name == "s1":
         ic_ee_identifier = "COPERNICUS/S1_GRD"
+        ic = ee.ImageCollection(ic_ee_identifier)
         ic_table_path = os.path.join(shp_gdrive_path, 's1_table.csv')
+    elif ic_name == "s2": # not implemented yet
+        ic = prep_s2_ic(ee_geometry)
+        ic_table_path = os.path.join(shp_gdrive_path, 's2_table.csv')
     
     else:
         raise Exception("Sorry, ic_name can only be s1 at the moment")
     
-    ic = ee.ImageCollection(ic_ee_identifier) \
-        .filterBounds(ee_geometry) # \
+    ic = ic.filterBounds(ee_geometry) # \
         # .filterDate(start_date, end_date) # not necessary here -- use only for downloading
     
     if not os.path.exists(ic_table_path):
@@ -75,6 +81,27 @@ def download_gee_rasters(ic_name, shp_name, shp_dir, google_drive_path,
         download_shp_ic(ic, shp_name, im_name, ee_geometry, shp_gee_folder_name, ic_table_path)
         
     return None
+
+
+def prep_s2_ic(ee_geometry):
+    """ Prepare sentinel 2 image collection
+    This in
+    """
+    s2params = {
+        'CLOUD_FILTER' : 50,
+        'CLD_PRB_THRESH' : 55,
+        'NIR_DRK_THRESH' : 0.2,
+        'CLD_PRJ_DIST' : 3, # 1 for low cumulus clouds, 2.5 or greater for high elevation or mountainous regions
+        'BUFFER' : 50
+    }
+    
+    s2_clouds_ic = ees.get_s2_sr_cld_col(ee_geometry, s2params) \
+      .map(ees.add_cld_shadow_mask_func(s2params))
+      
+    return s2_clouds_ic.select(['B2','B3','B4','B8','clouds','shadows','cloudmask'])
+
+
+
 
 
 def create_ic_table(ic, ic_table_path, doy_increment):
