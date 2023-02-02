@@ -42,15 +42,24 @@ from gee_raster_download_functions import download_gee_rasters
 
 # CONFIGURATION PARAMETERS
 
-shapefile_name = "SquareBuffer1km" # name of shapefile (without .shp) (contains a single polygon)
-shapefile_directory = "./UbonRatchathani" # local path to shapefile directory
+path_params = {
+    'shapefile_name' : "SquareBuffer1km", # name of shapefile (without .shp) (contains a single polygon)
+    'shapefile_directory' : "./UbonRatchathani", # local path to shapefile directory
+    # path to google drive folder
+    'google_drive_path' : '/Users/gopal/Google Drive/_Research/Research projects/ML/download_gee_rasters'
+    }
 
-# path to google drive folder
-google_drive_path = '/Users/gopal/Google Drive/_Research/Research projects/ML/download_gee_rasters'
-start_date = '2016-01-01' # start date for imagery download
-end_date = '2017-01-01' # end date for imagery download
-ic_name = 's2' # currently can only be 's1' (can be "s2" in future)
-doy_increment = 6 # days which to sample image collection (days)
+ic_params = {
+    'ic_name' : 's2' # currently can only be 's1' (can be "s2" in future)
+    }
 
-download_gee_rasters(ic_name, shapefile_name, shapefile_directory, google_drive_path, 
-                         start_date, end_date, doy_increment)
+date_params = {
+    'start_date' : '2016-01-01', # start date for imagery download
+    'end_date' : '2019-06-01', # end date for imagery download
+    'doy_increment' : 6 # days which to sample image collection (days)
+    }
+
+
+download_gee_rasters(ic_params, path_params, date_params)
+# download_gee_rasters(ic_name, shapefile_name, shapefile_directory, google_drive_path, 
+#                          start_date, end_date, doy_increment)

@@ -21,11 +21,23 @@ import eesentinel as ees
 import os
 from datetime import datetime
 
-def download_gee_rasters(ic_name, shp_name, shp_dir, google_drive_path, 
-                         start_date, end_date, doy_increment):
-
+def download_gee_rasters(ic_params, path_params, date_params):
+                             
+    # Initialize variables
+    ic_name = ic_params['ic_name']
+    
+    shp_name = path_params['shapefile_name']
+    shp_dir = path_params['shapefile_directory']
+    google_drive_path = path_params['google_drive_path']
+    
+    start_date = date_params['start_date']
+    end_date = date_params['end_date']
+    doy_increment = date_params['doy_increment']
+    
+    # Initialize Earth Engine
     ee.Initialize()
     
+    # Read boundary shapefile
     boundary_gpd = gpd.read_file(os.path.join(shp_dir, shp_name + ".shp"))
     boundary_ee = geemap.geopandas_to_ee(boundary_gpd)
     
@@ -66,7 +78,7 @@ def download_gee_rasters(ic_name, shp_name, shp_dir, google_drive_path,
         # .filterDate(start_date, end_date) # not necessary here -- use only for downloading
     
     if not os.path.exists(ic_table_path):
-        ic_table = create_ic_table(ic, ic_table_path, doy_increment)
+        ic_table = create_ic_table(ic, ic_name, ic_table_path, doy_increment)
     else:
         ic_table = pd.read_csv(ic_table_path)
     
@@ -104,7 +116,7 @@ def prep_s2_ic(ee_geometry):
 
 
 
-def create_ic_table(ic, ic_table_path, doy_increment):
+def create_ic_table(ic, ic_name, ic_table_path, doy_increment):
     
     print("Creating ic_table...")
     
@@ -115,9 +127,19 @@ def create_ic_table(ic, ic_table_path, doy_increment):
     ic_image_names = ic.aggregate_array("system:index").getInfo()
     
     ic_table = pd.DataFrame({'names' : ic_image_names})
-    ic_table['datestr'] = [re.sub(".*_.*_.*_.*_([0-9]+)T[0-9]+_.*","\\1",x) for x in ic_table["names"]]
-    ic_table['date'] = pd.to_datetime(ic_table['datestr'], format = "%Y%m%d")
-    ic_table = ic_table.sort_values('date')
+    
+    if ic_name == "s1":
+        ic_table['datestr'] = [re.sub(".*_.*_.*_.*_([0-9]+)T[0-9]+_.*","\\1",x) for x in ic_table["names"]]
+        ic_table['date'] = pd.to_datetime(ic_table['datestr'], format = "%Y%m%d")
+        ic_table = ic_table.sort_values('date')
+    elif ic_name == "s2":
+        ic_table['datestr'] = [re.sub("([0-9]+)T.*","\\1",x) for x in ic_table["names"]]
+        # print('datestr')
+        # print(ic_table['datestr'][0])
+        ic_table['date'] = pd.to_datetime(ic_table['datestr'], format = "%Y%m%d")
+        ic_table = ic_table.sort_values('date')
+    else:
+        raise ValueError('ic_name should be either s1 or s2, other values are not currently able to extract dates from EE image collection index values')
     
     # ic_table['day_diff'] = 1
     # print(np.array(ic_table.loc[1:2,'date']))
