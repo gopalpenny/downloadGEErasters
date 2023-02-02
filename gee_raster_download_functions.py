@@ -13,6 +13,7 @@ import geopandas as gpd
 import geemap
 import ee
 import re
+import rs
 import eesentinel as ees
 
 # import plotnine as p9
@@ -67,9 +68,15 @@ def download_gee_rasters(ic_params, path_params, date_params):
         ic_ee_identifier = "COPERNICUS/S1_GRD"
         ic = ee.ImageCollection(ic_ee_identifier)
         ic_table_path = os.path.join(shp_gdrive_path, 's1_table.csv')
+        ic_scale = 10
     elif ic_name == "s2": # not implemented yet
         ic = prep_s2_ic(ee_geometry)
         ic_table_path = os.path.join(shp_gdrive_path, 's2_table.csv')
+        ic_scale = 10
+    elif ic_name == "oli8": # not implemented yet
+        ic = prep_oli8_ic(ee_geometry)
+        ic_table_path = os.path.join(shp_gdrive_path, 'oli8_table.csv')
+        ic_scale = 30
     
     else:
         raise Exception("Sorry, ic_name can only be s1 at the moment")
@@ -90,9 +97,40 @@ def download_gee_rasters(ic_params, path_params, date_params):
     # %%
     for im_name in ic_names_to_download:
         update_ic_table_all(ic_table_path, shp_gee_folder_path)
-        download_shp_ic(ic, shp_name, im_name, ee_geometry, shp_gee_folder_name, ic_table_path)
+        download_shp_ic(ic, ic_scale, shp_name, im_name, ee_geometry, shp_gee_folder_name, ic_table_path)
         
     return None
+
+
+def prep_oli8_ic(ee_geometry):
+    """ Prepare Landsat 8 image collection
+    This in
+    """
+    
+    oli8_output_bands = ['SR_B7','SR_B6','SR_B5','SR_B4','SR_B3','SR_B2','clouds','shadows','clouds_shadows']
+    oli8_ic = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+      
+    get_qaband_clouds_shadows = rs.get_qaband_clouds_shadows_func(
+          qa_bandname = 'QA_PIXEL', 
+          cloud_bit = 3, 
+          shadow_bit = 4,
+          keep_orig_bands = True) 
+    oli8_clouds_ic = (oli8_ic
+      .map(get_qaband_clouds_shadows))
+      # .map(lambda im: im.addBands(im.expression('im.clouds | im.clouds_shadows', {'im' : im}).rename('cloudmask'))))
+      
+    return oli8_clouds_ic.select(oli8_output_bands)
+    # Get oli8 pixel timeseries
+    # oli8_ts = rs.get_pixel_ts_allbands(
+    #     pts_fc = ee.FeatureCollection(sample_pt),
+    #     image_collection = oli8_clouds_ic,
+    #     ic_property_id = 'system:index',
+    #     scale = 30) # for Landsat resolution
+    
+    
+    # s2_clouds_ic = ees.get_s2_sr_cld_col(ee_geometry, s2params) \
+    #   .map(ees.add_cld_shadow_mask_func(s2params))
+
 
 
 def prep_s2_ic(ee_geometry):
@@ -126,6 +164,8 @@ def create_ic_table(ic, ic_name, ic_table_path, doy_increment):
     print("Aggregating all image names...")
     ic_image_names = ic.aggregate_array("system:index").getInfo()
     
+    print('ic_image_names', ic_image_names)
+    
     ic_table = pd.DataFrame({'names' : ic_image_names})
     
     if ic_name == "s1":
@@ -140,6 +180,12 @@ def create_ic_table(ic, ic_name, ic_table_path, doy_increment):
         
         ic_image_cloud_pct = ic.aggregate_array("CLOUDY_PIXEL_PERCENTAGE").getInfo()
         ic_table['cloud_pct'] = ic_image_cloud_pct
+    elif ic_name == "oli8":
+        ic_table['datestr'] = [re.sub(".*_([0-9]+)$","\\1",x) for x in ic_table["names"]]
+        ic_table['date'] = pd.to_datetime(ic_table['datestr'], format = "%Y%m%d")
+        ic_table = ic_table.sort_values('date')
+        ic_image_cloud_pct = ic.aggregate_array("CLOUD_COVER").getInfo()
+        # ic_table['cloud_pct'] = ic_image_cloud_pct
     else:
         raise ValueError('ic_name should be either s1 or s2, other values are not currently able to extract dates from EE image collection index values')
     
@@ -249,7 +295,7 @@ def update_ic_table_all(ic_table_path, shp_gee_folder_path):
     return ic_table
 
 
-def download_shp_ic(ic, shp_name, im_name, ee_geometry, shp_gee_folder_name, ic_table_path):
+def download_shp_ic(ic, ic_scale, shp_name, im_name, ee_geometry, shp_gee_folder_name, ic_table_path):
     
     im_status = check_ic_table_image(ic_table_path, im_name)
     
@@ -266,7 +312,7 @@ def download_shp_ic(ic, shp_name, im_name, ee_geometry, shp_gee_folder_name, ic_
             folder = shp_gee_folder_name,
             fileNamePrefix = im_name,
             region = ee_geometry,
-            scale = 10,
+            scale = ic_scale,
             maxPixels = 1000000,
             fileFormat = 'GeoTIFF')
         task.start()

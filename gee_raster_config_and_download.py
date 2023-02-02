@@ -57,6 +57,12 @@ ic_s1_params = {
     'ic_name' : 's1' # currently can only be 's1' (can be "s2" in future)
     }
 
+
+
+ic_oli8_params = {
+    'ic_name' : 'oli8' # currently can only be 's1' (can be "s2" in future)
+    }
+
 date_params = {
     'start_date' : '2019-01-01', # start date for imagery download
     'end_date' : '2019-06-01', # end date for imagery download
@@ -66,3 +72,4 @@ date_params = {
 
 download_gee_rasters(ic_s1_params, path_params, date_params)
 download_gee_rasters(ic_s2_params, path_params, date_params)
+download_gee_rasters(ic_oli8_params, path_params, date_params)
