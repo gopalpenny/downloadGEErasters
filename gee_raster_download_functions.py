@@ -134,10 +134,12 @@ def create_ic_table(ic, ic_name, ic_table_path, doy_increment):
         ic_table = ic_table.sort_values('date')
     elif ic_name == "s2":
         ic_table['datestr'] = [re.sub("([0-9]+)T.*","\\1",x) for x in ic_table["names"]]
-        # print('datestr')
-        # print(ic_table['datestr'][0])
         ic_table['date'] = pd.to_datetime(ic_table['datestr'], format = "%Y%m%d")
         ic_table = ic_table.sort_values('date')
+        
+        
+        ic_image_cloud_pct = ic.aggregate_array("CLOUDY_PIXEL_PERCENTAGE").getInfo()
+        ic_table['cloud_pct'] = ic_image_cloud_pct
     else:
         raise ValueError('ic_name should be either s1 or s2, other values are not currently able to extract dates from EE image collection index values')
     

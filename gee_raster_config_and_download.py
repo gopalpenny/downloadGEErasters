@@ -49,17 +49,20 @@ path_params = {
     'google_drive_path' : '/Users/gopal/Google Drive/_Research/Research projects/ML/download_gee_rasters'
     }
 
-ic_params = {
+ic_s2_params = {
     'ic_name' : 's2' # currently can only be 's1' (can be "s2" in future)
     }
 
+ic_s1_params = {
+    'ic_name' : 's1' # currently can only be 's1' (can be "s2" in future)
+    }
+
 date_params = {
-    'start_date' : '2016-01-01', # start date for imagery download
+    'start_date' : '2019-01-01', # start date for imagery download
     'end_date' : '2019-06-01', # end date for imagery download
     'doy_increment' : 6 # days which to sample image collection (days)
     }
 
 
-download_gee_rasters(ic_params, path_params, date_params)
-# download_gee_rasters(ic_name, shapefile_name, shapefile_directory, google_drive_path, 
-#                          start_date, end_date, doy_increment)
+download_gee_rasters(ic_s1_params, path_params, date_params)
+download_gee_rasters(ic_s2_params, path_params, date_params)
