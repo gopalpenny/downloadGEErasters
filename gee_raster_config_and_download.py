@@ -49,27 +49,30 @@ path_params = {
     'google_drive_path' : '/Users/gopal/Google Drive/_Research/Research projects/ML/download_gee_rasters'
     }
 
-ic_s2_params = {
-    'ic_name' : 's2' # currently can only be 's1' (can be "s2" in future)
+date_params = {
+    'start_date' : '2019-05-15', # start date for imagery download
+    'end_date' : '2019-06-01', # end date for imagery download
+    'doy_increment' : 6 # days which to sample image collection (days)
     }
 
 ic_s1_params = {
     'ic_name' : 's1' # currently can only be 's1' (can be "s2" in future)
     }
 
-
+ic_s2_params = {
+    'ic_name' : 's2', # currently can only be 's1' (can be "s2" in future)
+    'tile_option' : 0, # index of tile, ordered alphabetically
+    # 'tile_option' : '55PWB', # Or, can be name of tile
+    'max_cloud_pct' : 50 # exclude tiles with > 50% clouds
+    }
 
 ic_oli8_params = {
-    'ic_name' : 'oli8' # currently can only be 's1' (can be "s2" in future)
-    }
-
-date_params = {
-    'start_date' : '2019-01-01', # start date for imagery download
-    'end_date' : '2019-06-01', # end date for imagery download
-    'doy_increment' : 6 # days which to sample image collection (days)
+    'ic_name' : 'oli8', # currently can only be 's1' (can be "s2" in future)
+    'rowpath_option' : 0 # can be index of row/path (0, 1, etc, must not exceed number of tiles)
+    # 'rowpath_option' : '55PWB' # Or, can be name of row/path
     }
 
 
-download_gee_rasters(ic_s1_params, path_params, date_params)
+# download_gee_rasters(ic_s1_params, path_params, date_params)
 download_gee_rasters(ic_s2_params, path_params, date_params)
-download_gee_rasters(ic_oli8_params, path_params, date_params)
+# download_gee_rasters(ic_oli8_params, path_params, date_params)

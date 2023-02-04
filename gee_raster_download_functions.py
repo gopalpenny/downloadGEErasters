@@ -85,7 +85,7 @@ def download_gee_rasters(ic_params, path_params, date_params):
         # .filterDate(start_date, end_date) # not necessary here -- use only for downloading
     
     if not os.path.exists(ic_table_path):
-        ic_table = create_ic_table(ic, ic_name, ic_table_path, doy_increment)
+        ic_table = create_ic_table(ic, ic_name, ic_table_path, doy_increment, ic_params)
     else:
         ic_table = pd.read_csv(ic_table_path)
     
@@ -154,7 +154,7 @@ def prep_s2_ic(ee_geometry):
 
 
 
-def create_ic_table(ic, ic_name, ic_table_path, doy_increment):
+def create_ic_table(ic, ic_name, ic_table_path, doy_increment, ic_params):
     
     print("Creating ic_table...")
     
@@ -172,20 +172,33 @@ def create_ic_table(ic, ic_name, ic_table_path, doy_increment):
         ic_table['datestr'] = [re.sub(".*_.*_.*_.*_([0-9]+)T[0-9]+_.*","\\1",x) for x in ic_table["names"]]
         ic_table['date'] = pd.to_datetime(ic_table['datestr'], format = "%Y%m%d")
         ic_table = ic_table.sort_values('date')
+        ic_table['include'] = True
     elif ic_name == "s2":
         ic_table['datestr'] = [re.sub("([0-9]+)T.*","\\1",x) for x in ic_table["names"]]
         ic_table['date'] = pd.to_datetime(ic_table['datestr'], format = "%Y%m%d")
+        ic_table['tile'] = [re.sub(".*_T([0-9a-zA-Z]+)$","\\1",x) for x in ic_table["names"]]
         ic_table = ic_table.sort_values('date')
-        
-        
         ic_image_cloud_pct = ic.aggregate_array("CLOUDY_PIXEL_PERCENTAGE").getInfo()
         ic_table['cloud_pct'] = ic_image_cloud_pct
+        
+        tile_option = ic_params['tile_option']
+        if isinstance(tile_option, int):
+            tiles_unique = np.sort(ic_table.tile.unique())
+            tile_option = np.min([tile_option, len(tiles_unique)]) # if index out of range, set it to last tile
+            tile = tiles_unique[tile_option]
+        else:
+            tile = tile_option
+            
+        ic_table['include'] = (ic_table.tile == tile) & (ic_table.cloud_pct <= ic_params['max_cloud_pct'])
+        
     elif ic_name == "oli8":
         ic_table['datestr'] = [re.sub(".*_([0-9]+)$","\\1",x) for x in ic_table["names"]]
         ic_table['date'] = pd.to_datetime(ic_table['datestr'], format = "%Y%m%d")
         ic_table = ic_table.sort_values('date')
         ic_image_cloud_pct = ic.aggregate_array("CLOUD_COVER").getInfo()
         # ic_table['cloud_pct'] = ic_image_cloud_pct
+        
+        ic_table['include'] = True
     else:
         raise ValueError('ic_name should be either s1 or s2, other values are not currently able to extract dates from EE image collection index values')
     
