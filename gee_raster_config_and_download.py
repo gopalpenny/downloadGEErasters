@@ -62,17 +62,18 @@ ic_s1_params = {
 ic_s2_params = {
     'ic_name' : 's2', # currently can only be 's1' (can be "s2" in future)
     'tile_option' : 0, # index of tile, ordered alphabetically
-    # 'tile_option' : '55PWB', # Or, can be name of tile
+    # 'tile_option' : '55PWB', # Or, can be name of tile or "any"
     'max_cloud_pct' : 50 # exclude tiles with > 50% clouds
     }
 
 ic_oli8_params = {
     'ic_name' : 'oli8', # currently can only be 's1' (can be "s2" in future)
-    'rowpath_option' : 0 # can be index of row/path (0, 1, etc, must not exceed number of tiles)
-    # 'rowpath_option' : '55PWB' # Or, can be name of row/path
+    'rowpath_option' : 0, # can be index of row/path (0, 1, etc, must not exceed number of tiles)
+    # 'rowpath_option' : '55PWB' # Or, can be name of row/path or "any"
+    'max_cloud_pct' : 60 # exclude tiles with > 60% clouds
     }
 
 
 # download_gee_rasters(ic_s1_params, path_params, date_params)
-download_gee_rasters(ic_s2_params, path_params, date_params)
-# download_gee_rasters(ic_oli8_params, path_params, date_params)
+# download_gee_rasters(ic_s2_params, path_params, date_params)
+download_gee_rasters(ic_oli8_params, path_params, date_params)

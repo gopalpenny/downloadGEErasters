@@ -75,6 +75,7 @@ def download_gee_rasters(ic_params, path_params, date_params):
         ic_scale = 10
     elif ic_name == "oli8": # not implemented yet
         ic = prep_oli8_ic(ee_geometry)
+        # print('cloud_cover',ic.aggregate_array('CLOUD_COVER').getInfo())
         ic_table_path = os.path.join(shp_gdrive_path, 'oli8_table.csv')
         ic_scale = 30
     
@@ -86,7 +87,9 @@ def download_gee_rasters(ic_params, path_params, date_params):
     
     if not os.path.exists(ic_table_path):
         ic_table = create_ic_table(ic, ic_name, ic_table_path, doy_increment, ic_params)
+        update_ic_table_all(ic_table_path, shp_gee_folder_path)
     else:
+        update_ic_table_all(ic_table_path, shp_gee_folder_path)
         ic_table = pd.read_csv(ic_table_path)
     
     idx_download = ((ic_table['date'] >= start_date) & 
@@ -164,7 +167,7 @@ def create_ic_table(ic, ic_name, ic_table_path, doy_increment, ic_params):
     print("Aggregating all image names...")
     ic_image_names = ic.aggregate_array("system:index").getInfo()
     
-    print('ic_image_names', ic_image_names)
+    # print('ic_image_names', ic_image_names)
     
     ic_table = pd.DataFrame({'names' : ic_image_names})
     
@@ -182,23 +185,44 @@ def create_ic_table(ic, ic_name, ic_table_path, doy_increment, ic_params):
         ic_table['cloud_pct'] = ic_image_cloud_pct
         
         tile_option = ic_params['tile_option']
+        tiles_unique = np.sort(ic_table.tile.unique())
         if isinstance(tile_option, int):
-            tiles_unique = np.sort(ic_table.tile.unique())
             tile_option = np.min([tile_option, len(tiles_unique)]) # if index out of range, set it to last tile
-            tile = tiles_unique[tile_option]
-        else:
-            tile = tile_option
+            tiles = [tiles_unique[tile_option]]
+        elif str(tile_option) == 'any': # allow any of the tiles
+            tiles = tiles_unique
+        else: # allow only the selected tile
+            tiles = [tile_option]
             
-        ic_table['include'] = (ic_table.tile == tile) & (ic_table.cloud_pct <= ic_params['max_cloud_pct'])
+        ic_table['include'] = (ic_table.tile.isin(tiles)) & (ic_table.cloud_pct <= ic_params['max_cloud_pct'])
         
     elif ic_name == "oli8":
         ic_table['datestr'] = [re.sub(".*_([0-9]+)$","\\1",x) for x in ic_table["names"]]
         ic_table['date'] = pd.to_datetime(ic_table['datestr'], format = "%Y%m%d")
         ic_table = ic_table.sort_values('date')
-        ic_image_cloud_pct = ic.aggregate_array("CLOUD_COVER").getInfo()
-        # ic_table['cloud_pct'] = ic_image_cloud_pct
+        ic_table['cloud_pct'] = ic.aggregate_array('CLOUD_COVER').getInfo()
+        ic_table['rowpath'] = [re.sub(".*_([0-9]+)_.*","\\1",x) for x in ic_table["names"]]
+
+        rowpath_option = ic_params['rowpath_option']
+        rowpaths_unique = np.sort(ic_table.rowpath.unique())
         
-        ic_table['include'] = True
+        # rowpath is index if it is an integer and less than 10
+        rowpath_index = False
+        if isinstance(rowpath_option, int):
+            if rowpath_index <= 10:
+                rowpath_index = True
+        
+        if rowpath_index:
+            rowpaths_unique = np.sort(ic_table.rowpath.unique())
+            rowpath_option = np.min([rowpath_option, len(rowpaths_unique)]) # if index out of range, set it to last tile
+            rowpaths = [rowpaths_unique[rowpath_option]]
+        elif str(rowpath_option) == 'any': # allow any of the tiles
+            rowpaths = rowpaths_unique
+        else:
+            rowpaths = [str(rowpath_option)]
+        # ic_table['include'] = True
+        ic_table['include'] = (ic_table.rowpath.isin(rowpaths)) & (ic_table.cloud_pct <= ic_params['max_cloud_pct'])
+
     else:
         raise ValueError('ic_name should be either s1 or s2, other values are not currently able to extract dates from EE image collection index values')
     
@@ -222,7 +246,7 @@ def create_ic_table(ic, ic_name, ic_table_path, doy_increment, ic_params):
         days_orig = np.array(ic_table[ic_table['year'] == year]['doy'])
         days_resampled = resample_nearest_days(doy_select, days_orig)
         # days_resampled.shape
-        ic_im_year = ic_table[ic_table['year'] == year]
+        ic_im_year = ic_table[(ic_table['year'] == year) & (ic_table['include'])]
         # ic_im_year = ic_im_year[~ic_im_year['doy'].duplicated()]
         ic_im_year_resampled_names = ic_im_year.names[
             (ic_table['doy'].isin(days_resampled)) &
@@ -285,7 +309,7 @@ def update_ic_table_gee_task_sent(ic_table_path, im_name, val):
     # 1 read ic_table
     ic_table = pd.read_csv(ic_table_path)
 
-    # 2 insert val to talbe
+    # 2 insert val to table
     ic_table.loc[ic_table['names'] == im_name, 'gee_task_sent'] = val
     
     ic_table.to_csv(ic_table_path, index = False)
@@ -303,6 +327,12 @@ def update_ic_table_all(ic_table_path, shp_gee_folder_path):
     images_downloaded = [re.sub("\\.tif$","",x) for x in os.listdir(shp_gee_folder_path)]
 
     ic_table['downloaded'] = ic_table['names'].isin(images_downloaded)
+    
+    unique_gee_task_sent = ic_table.gee_task_sent.unique()
+    if len(unique_gee_task_sent) == 1 and unique_gee_task_sent[0] == '':
+        date_today = datetime.strftime(datetime.today(), "%Y-%m-%d")
+        ic_table.loc[ic_table.downloaded,'gee_task_sent'] = date_today
+    
     ic_table.to_csv(ic_table_path, index = False)
     
     return ic_table
