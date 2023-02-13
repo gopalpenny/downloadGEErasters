@@ -535,7 +535,7 @@ def get_monthly_water_balance(reduce_region, start_year, end_year, scale_m):
   modisET = ee.ImageCollection("MODIS/006/MOD16A2")
   chirps = ee.ImageCollection("UCSB-CHG/CHIRPS/DAILY")
   
-  pet_monthly = rs.get_monthly_average(modisET, reduce_region, 'PET', start_year, end_year, scale_m) \
+  pet_monthly = get_monthly_average(modisET, reduce_region, 'PET', start_year, end_year, scale_m) \
     .multiply(0.01).multiply(30)
   
   et_monthly = get_monthly_average(modisET, reduce_region, 'ET', start_year, end_year, scale_m) \
