@@ -703,3 +703,139 @@ def ee_array_to_df(arr, list_of_bands):
 
     return df
 
+
+##### LANDSAT PREPROCESSING #####
+
+def prep_tm5_ic(ee_geometry):
+    """ Prepare Landsat 5 image collection
+    """
+    
+    tm5_output_bands_orig = ['SR_B7','SR_B5','SR_B4','SR_B3','SR_B2','SR_B1','QA_PIXEL']
+    tm5_output_bands = ['swir2','swir1','nir','red','green','blue','QA_PIXEL']
+    tm5_ic = ee.ImageCollection("LANDSAT/LT05/C02/T1_L2") \
+      .filterBounds(ee_geometry)
+    
+    return tm5_ic.select(tm5_output_bands_orig, tm5_output_bands)
+
+# %% 
+def prep_etm7_ic(ee_geometry):
+    """ Prepare Landsat 7 image collection
+    """
+    
+    etm7_output_bands_orig = ['SR_B7','SR_B5','SR_B4','SR_B3','SR_B2','SR_B1','QA_PIXEL']
+    etm7_output_bands = ['swir2','swir1','nir','red','green','blue','QA_PIXEL']
+    etm7_ic = ee.ImageCollection("LANDSAT/LE07/C02/T1_L2") \
+      .filterBounds(ee_geometry)
+      
+    return etm7_ic.select(etm7_output_bands_orig, etm7_output_bands)
+
+
+# %%
+def prep_oli8_ic(ee_geometry):
+    """ Prepare Landsat 8 image collection
+    """
+    
+    oli8_output_bands_orig = ['SR_B7','SR_B6','SR_B5','SR_B4','SR_B3','SR_B2','QA_PIXEL']
+    oli8_output_bands = ['swir2','swir1','nir','red','green','blue','QA_PIXEL']
+    oli8_ic = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2') \
+        .filterBounds(ee_geometry)
+
+    return oli8_ic.select(oli8_output_bands_orig, oli8_output_bands)
+    # Get oli8 pixel timeseries
+
+# %%
+# ee_geometry = ee.FeatureCollection("users/gopalpenny/cauvery/Cauvery_boundary5")
+
+
+# # %%
+# tm5 = prep_tm5_ic(ee_geometry) 
+# etm7 = prep_etm7_ic(ee_geometry)
+# oli8 = prep_oli8_ic(ee_geometry) 
+
+# %%
+def prep_landsat_clouds(landsat_ic):
+    """ Prepare Landsat image collection with cloud and shadow masks
+    Example:
+
+    tm5 = prep_tm5_ic(ee_geometry) 
+    etm7 = prep_etm7_ic(ee_geometry)
+    oli8 = prep_oli8_ic(ee_geometry) 
+    landsat = tm5.merge(etm7).merge(oli8) \
+        .filterMetadata('CLOUD_COVER', 'less_than', 50)
+    landsat_clouds = prep_landsat_clouds(landsat)
+    """
+
+    landsat_output_bands = ['swir2','swir1','nir','red','green','blue','clouds','shadows','clouds_shadows']
+    get_qaband_clouds_shadows = get_qaband_clouds_shadows_func(
+          qa_bandname = 'QA_PIXEL', 
+          cloud_bit = 3, 
+          shadow_bit = 4,
+          keep_orig_bands = True) 
+    landsat_clouds_ic = (landsat_ic
+      .map(get_qaband_clouds_shadows))
+    
+    return landsat_clouds_ic.select(landsat_output_bands)
+
+
+# %%
+
+def landsat_season_summary(ic, start_date, end_date, season_name, band_names_median, band_names_max, band_names_count):
+    """Get summary of Landsat image collection for a time period (e.g., season)
+
+    Args:
+        ic (ee.ImageCollection): image collection to reduce
+        start_date (datetime): start date of season
+        end_date (datetime): end date of season
+        season_name (str): name of season
+        band_names_median (list): names of bands to take median
+        band_names_max (list): names of bands to take max
+        band_names_count (list): names of bands to take count
+
+    Returns:
+        ee.Image: image with median, max, and count bands
+        
+        The summary statistic (e.g., 'median') and season name is appended to each band
+        that is output in the final image.
+    
+    Example:
+        tm5 = ee.ImageCollection("LANDSAT/LT05/C02/T1_L2")
+        start_date = datetime.datetime(2000,1,1)
+        end_date = datetime.datetime(2000,3,31)
+        season_name = 'JFM'
+        band_names_median = ['swir2','swir1','nir','red','green','blue']
+        band_names_max = ['blue']
+        band_names_count = ['blue']
+        tm5_season = landsat_season_summary(tm5, start_date, end_date, season_name, 
+          band_names_median, band_names_max, band_names_count)
+    """
+    band_names_median_gee = [name + '_median' for name in band_names_median]
+    band_names_median_season = [name + '_' + season_name for name in band_names_median_gee]
+
+    band_names_max_gee = [name + '_max' for name in band_names_max]
+    band_names_max_season = [name + '_' + season_name for name in band_names_max_gee]
+
+    band_names_count_gee = [name + '_median' for name in band_names_count]
+    band_names_count_season = [name + '_' + season_name for name in band_names_count_gee]
+
+    ic = ic \
+      .filterDate(start_date, end_date)
+    num_images = ic.size().getInfo()
+    print(season_name + ' num images:',num_images)
+    
+    season_median = ic \
+      .reduce(ee.Reducer.median()) \
+      .select(band_names_median_gee, band_names_median_season)
+    
+    if len(band_names_max) > 0:
+      season_max = ic \
+        .reduce(ee.Reducer.max()) \
+        .select(band_names_max_gee, band_names_max_season)
+      season_median.addBands(season_max)
+    
+    if len(band_names_count) > 0:
+      season_count = ic \
+        .reduce(ee.Reducer.count()) \
+        .select(band_names_count_gee, band_names_count_season)
+      season_median.addBands(season_count)
+    
+    return season_median
