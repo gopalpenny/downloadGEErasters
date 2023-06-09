@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import geemap
-import ee
+import ee # earthengine-api
 import re
 import rs
 import eesentinel as ees
