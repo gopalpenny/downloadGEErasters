@@ -39,13 +39,35 @@ filename = f'chirps_precip_sum_{start_year}_{end_year}'
 
 # %%
 # NOT WORKING FOR SOME REASON
-task_chirps = ee.batch.Export.image.toDrive({
-    'image': chirps_annual_avg,
-    'description': filename,
-    'fileNamePrefix': filename,
-    'folder': 'GEE_Div',
-    'dimensions': 1000,
-    'region': rect
-})
+task_chirps = ee.batch.Export.image.toDrive(
+    image= chirps_annual_avg,
+    description= filename,
+    fileNamePrefix= filename,
+    folder= 'GEE_Div',
+    dimensions= 1000,
+    region= rect
+)
 
 # task_chirps.start()
+
+# %% GFSAD
+gfsad1k = ee.Image("USGS/GFSAD1000_V1")
+
+# %%
+gfsad1k.getInfo()
+
+# %%
+# NOT WORKING FOR SOME REASON
+task_gfsad1k = ee.batch.Export.image.toDrive(
+    image = gfsad1k,
+    description = 'gfsad1k_Sasia',
+    fileNamePrefix = 'gfsad1k_Sasia',
+    folder = 'GEE_Div',
+    region = rect
+)
+
+task_gfsad1k.start()
+
+# %%
+ee.batch.Task.list()[0]
+# %%
