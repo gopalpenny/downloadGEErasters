@@ -225,6 +225,7 @@ for (year_i in years) {
 }
 
 write_csv(subdist_sowday_df, file.path(out_dir,"subsdist_median_sowday_2019_2022.csv"))
+st_write(subdists_punjab, file.path(out_dir,"subsdist_punjab.shp"))
 
 subdists_sowday_sf <- subdists_punjab %>%
   full_join(subdist_sowday_df, by= "SUB_ID")
