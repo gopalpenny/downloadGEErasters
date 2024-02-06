@@ -26,7 +26,7 @@ chirps_precip = ee.ImageCollection("UCSB-CHG/CHIRPS/PENTAD") \
 # years.get(0).add(1).getInfo()
 # chirps_precip.first().getInfo()
 
-# years = np.arange(2016,2022)
+years = np.arange(2016,2022)
 
   
 # monsoon_year = years[0]
