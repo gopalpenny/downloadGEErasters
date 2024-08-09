@@ -550,38 +550,38 @@ def get_monthly_water_balance(reduce_region, start_year, end_year, scale_m):
 
 
 
-def plot_monthly_water_balance(reduce_region, start_year, end_year, scale_m, title):
-  """
-  8. Get a timeseries plot of monthly water balance for a region using CHIRPS and MODIS ET
-  This function calculates the average P, PET, and ET for a region
-  in the range start_year, end_year. It uses reduceRegion to calculate the overall average
-  within the region. It returns a 12x3 array of monthly values.
-  reduce_region - feature over which to calculate the average
-  start_year - start year of the range
-  end_year - end year of the range
-  scale_m - scale for reduceRegion call
-  title - title for plot
-  wb_plot = rs.get_monthly_water_balance(reduce_region, start_year, end_year, scale_m, 'Plot title')
-  print(wb_plot)
-  """
+# def plot_monthly_water_balance(reduce_region, start_year, end_year, scale_m, title):
+#   """
+#   8. Get a timeseries plot of monthly water balance for a region using CHIRPS and MODIS ET
+#   This function calculates the average P, PET, and ET for a region
+#   in the range start_year, end_year. It uses reduceRegion to calculate the overall average
+#   within the region. It returns a 12x3 array of monthly values.
+#   reduce_region - feature over which to calculate the average
+#   start_year - start year of the range
+#   end_year - end year of the range
+#   scale_m - scale for reduceRegion call
+#   title - title for plot
+#   wb_plot = rs.get_monthly_water_balance(reduce_region, start_year, end_year, scale_m, 'Plot title')
+#   print(wb_plot)
+#   """
 
-  # Monthly time series and chart
-  plot_vars = get_monthly_water_balance(reduce_region, start_year, end_year, scale_m)
+#   # Monthly time series and chart
+#   plot_vars = get_monthly_water_balance(reduce_region, start_year, end_year, scale_m)
   
-  # print('plot_vars',plot_vars)
-  months = ee.List.sequence(1,12)
-  ts_chart = ui.Chart.array.values(plot_vars, 0, months) \
-    .setSeriesNames(['CHIRPS P', 'MODIS PET','MODIS ET']) \
-    .setSeriesNames(['P', 'PET','ET']) \
-    .setOptions({
-      'title': title,
-      'hAxis': {
-        'title': 'Month'
-      },
-      'vAxis': {title: 'Value, mm'},
-      'pointSize': 5,                # <--- hide the points.
-      'lineSize': 3                  # <--- show the line.
-    })
+#   # print('plot_vars',plot_vars)
+#   months = ee.List.sequence(1,12)
+#   ts_chart = ui.Chart.array.values(plot_vars, 0, months) \
+#     .setSeriesNames(['CHIRPS P', 'MODIS PET','MODIS ET']) \
+#     .setSeriesNames(['P', 'PET','ET']) \
+#     .setOptions({
+#       'title': title,
+#       'hAxis': {
+#         'title': 'Month'
+#       },
+#       'vAxis': {title: 'Value, mm'},
+#       'pointSize': 5,                # <--- hide the points.
+#       'lineSize': 3                  # <--- show the line.
+#     })
     
   return(ts_chart)
 

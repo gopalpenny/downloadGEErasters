@@ -2,9 +2,12 @@ import ee
 import numpy as np
 import pandas as pd
 import os
+
+print(os.getcwd())
+print(os.listdir())
 import rs
 
-ee.Initialize()
+ee.Initialize(project = 'myresearch-421903')
 
 # Load subdistricts of Punjab
 subdist = ee.FeatureCollection('projects/ee-gopalpenny/assets/INDIA_SUBDISTRICT_11')
@@ -20,7 +23,10 @@ punjab_subdist_all = subdist_punjab.aggregate_array('NAME').getInfo()
 gee_dirname = 'GEE_DIV_MODIS_EVI_punjab'
 
 region_dir_name = gee_dirname + '_evi'
-gee_path_local = os.path.join('/Users/gopal/Google Drive/_Research/Research projects/G_D/GEE_Div', gee_dirname)
+gee_div_paths = ['/Users/gopal/Google Drive/_Research/Research projects/G_D/GEE_Div',
+                 '/Users/gpenny/Google Drive/My Drive/_Research/Research projects/G_D/GEE_Div']
+gee_div_path = [path for path in gee_div_paths if os.path.exists(path)][0]
+gee_path_local = os.path.join(gee_div_path, gee_dirname)
 region_path_local = os.path.join(gee_path_local, region_dir_name)
 if not os.path.exists(region_path_local):
   os.mkdir(region_path_local)
@@ -37,8 +43,8 @@ modis_terra_evi.first().getInfo()
 
 modis_evi_merged = modis_terra_evi.merge(modis_aqua_evi)
 modis_evi_merged = modis_evi_merged \
-  .filter(ee.Filter.calendarRange(2019, 2019, 'year')) \
-  .filter(ee.Filter.calendarRange(4, 12, 'month')) # filterDate('2020-04-01','2020-12-31')
+  .filter(ee.Filter.calendarRange(2018, 2023, 'year')) \
+  .filter(ee.Filter.calendarRange(4, 12, 'month')) #\ .filterDate('2020-04-01','2020-12-31')
 
 # convert SummaryQA band from bitmask 0-1 uint to 0-3 int
 def prep_modis_bands(img):
