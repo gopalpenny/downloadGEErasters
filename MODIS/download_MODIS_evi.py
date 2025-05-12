@@ -43,7 +43,7 @@ modis_terra_evi.first().getInfo()
 
 modis_evi_merged = modis_terra_evi.merge(modis_aqua_evi)
 modis_evi_merged = modis_evi_merged \
-  .filter(ee.Filter.calendarRange(2018, 2023, 'year')) \
+  .filter(ee.Filter.calendarRange(2000, 2023, 'year')) \
   .filter(ee.Filter.calendarRange(4, 12, 'month')) #\ .filterDate('2020-04-01','2020-12-31')
 
 # convert SummaryQA band from bitmask 0-1 uint to 0-3 int
