@@ -1,5 +1,6 @@
 import ee
 import ee.batch
+import ee.batch
 import numpy as np
 import pandas as pd
 import os
@@ -11,15 +12,40 @@ import rs
 ee.Initialize(project = 'myresearch-421903')
 
 # Load subdistricts of Punjab
-# subdist = ee.FeatureCollection('projects/ee-gopalpenny/assets/INDIA_SUBDISTRICT_11')
-# subdist_punjab = subdist \
-#   .filter(ee.Filter.eq('STATE_UT','Punjab'))
+subdist = ee.FeatureCollection('projects/ee-gopalpenny/assets/INDIA_SUBDISTRICT_11')
+subdist_states = subdist \
+  .filter(ee.Filter.inList('STATE_UT',['Punjab','Haryana']))
 
-haryana_fc = ee.FeatureCollection('projects/myresearch-421903/assets/haryana')
-haryana_ft = ee.Feature(haryana_fc.union().first())
-haryana_ft_buffer = haryana_ft.buffer(15000)
+# haryana_fc = ee.FeatureCollection('projects/myresearch-421903/assets/haryana')
+subdist_states_ft = ee.Feature(subdist_states.union().first())
+subdist_states_ft_buffer = subdist_states_ft.buffer(15000)
 # haryana_ft_buffer.getInfo()
 # .buffer(10) # buffer to ensure all pixels are included
+
+mod_npp = ee.ImageCollection("MODIS/061/MOD17A3HGF").filter(ee.Filter.calendarRange(2000, 2024, 'year'))
+
+# mod_npp.first().select(['Npp']).getInfo()
+
+mod_npp_dates = mod_npp.aggregate_array('system:index').getInfo()
+
+for mod_date in mod_npp_dates:
+  modis_npp_year = mod_npp.filter(ee.Filter.eq('system:index',mod_date)).first()
+  # modis_npp = modis_npp.select('NPP').updateMask(modis_npp.select('NPP').gt(0))
+
+  print('mod_date' + mod_date)
+  task_npp = ee.batch.Export.image.toDrive(
+      image = modis_npp_year.select(['Npp']),
+      description = 'MODIS_NPP' + mod_date,
+      folder = 'MODIS_NPP_haryana' + mod_date,
+      fileNamePrefix = 'MODIS_NPP' + mod_date,
+      region = subdist_states_ft_buffer.geometry(),
+      scale = 500,
+      maxPixels = 1e13
+  )
+  task_npp.start()
+  print(task_npp.status())
+
+
 
 # task3 = ee.batch.Export.table.toDrive(
 #     collection = ee.FeatureCollection(haryana_ft_buffer),
